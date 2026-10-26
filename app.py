@@ -97,6 +97,11 @@ def default_nyc_dataset() -> str:
     if os.environ.get("NYC_DATASET"):
         return os.environ["NYC_DATASET"]
     try:
+        if st.secrets.get("NYC_DATASET"):
+            return str(st.secrets["NYC_DATASET"])
+    except Exception:
+        pass
+    try:
         names = q(f"""select table_schema s from `{PROJECT}`.`region-us`.INFORMATION_SCHEMA.TABLES
                       where table_name = 'mart_daily_revenue' and table_schema like 'dev_%_business'
                       order by 1""").s.tolist()
