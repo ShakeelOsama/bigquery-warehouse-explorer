@@ -12,6 +12,7 @@ Run:  streamlit run app.py --server.port 8501
 from __future__ import annotations
 
 import datetime as dt
+import decimal
 import os
 import subprocess
 
@@ -72,7 +73,11 @@ def _param(name, value):
 def q(sql: str, params: tuple = ()) -> pd.DataFrame:
     """Run a parameterised query. params = ((name, value), ...) so results can be cached."""
     cfg = bigquery.QueryJobConfig(query_parameters=[_param(n, v) for n, v in params])
-    return client().query(sql, job_config=cfg).to_dataframe()
+    df = client().query(sql, job_config=cfg).to_dataframe()
+    for c in df.columns:
+        if df[c].dtype == "object" and df[c].map(lambda x: isinstance(x, decimal.Decimal)).any():
+            df[c] = df[c].astype(float)
+    return df
 
 
 def show_sql(sql: str) -> None:
