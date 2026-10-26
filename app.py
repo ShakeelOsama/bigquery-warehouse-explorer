@@ -22,8 +22,26 @@ from google.cloud import bigquery
 
 st.set_page_config(page_title="BigQuery Warehouse Explorer", page_icon="📊", layout="wide")
 
-PROJECT = os.environ.get("GCP_PROJECT") or subprocess.run(
-    ["gcloud", "config", "get-value", "project"], capture_output=True, text=True).stdout.strip()
+def _secret_sa() -> dict | None:
+    """Service-account credentials from Streamlit secrets (used on Streamlit Community Cloud)."""
+    try:
+        return dict(st.secrets["gcp_service_account"])
+    except Exception:
+        return None
+
+
+def _gcloud_project() -> str:
+    try:
+        return subprocess.run(["gcloud", "config", "get-value", "project"],
+                              capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception:
+        return ""
+
+
+SA_INFO = _secret_sa()
+PROJECT = (os.environ.get("GCP_PROJECT")
+           or (SA_INFO or {}).get("project_id")
+           or _gcloud_project())
 USER = os.environ.get("USER", "me")
 DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]          # BigQuery dayofweek 1 = Sunday
 BLUE, GREEN, AMBER, RED = "#2563eb", "#16a34a", "#d97706", "#dc2626"
@@ -31,7 +49,11 @@ BLUE, GREEN, AMBER, RED = "#2563eb", "#16a34a", "#d97706", "#dc2626"
 
 @st.cache_resource
 def client() -> bigquery.Client:
-    return bigquery.Client(project=PROJECT)
+    if SA_INFO:                                  # deployed: read-only service account from secrets
+        from google.oauth2 import service_account
+        creds = service_account.Credentials.from_service_account_info(SA_INFO)
+        return bigquery.Client(project=PROJECT, credentials=creds)
+    return bigquery.Client(project=PROJECT)      # Cloud Shell / local: the signed-in user
 
 
 def _param(name, value):
