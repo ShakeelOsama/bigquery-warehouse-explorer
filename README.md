@@ -1,5 +1,7 @@
 # BigQuery Warehouse Explorer
 
+**Live app:** https://bigquery-warehouse-explorer.streamlit.app
+
 A Streamlit web app on top of two BigQuery warehouses (raw → cleaned → business, built with dbt).
 Every chart is a live, parameterised BigQuery query driven by the sidebar filters.
 
