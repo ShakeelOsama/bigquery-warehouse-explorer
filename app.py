@@ -147,8 +147,8 @@ def nyc_page():
     airport = st.sidebar.checkbox("Airport trips only")
 
     where = """pickup_date between @d1 and @d2
-      and (array_length(@b) = 0 or pu_borough in unnest(@b))
-      and (array_length(@p) = 0 or payment_type in unnest(@p))
+      and (coalesce(array_length(@b), 0) = 0 or pu_borough in unnest(@b))
+      and (coalesce(array_length(@p), 0) = 0 or payment_type in unnest(@p))
       and (not @airport or is_airport_trip)"""
     P = (("d1", d1), ("d2", d2), ("b", tuple(sel_b)), ("p", tuple(sel_p)), ("airport", airport))
 
@@ -253,8 +253,8 @@ def olist_page():
     sel_c = st.sidebar.multiselect("Product category", cats, default=[])
 
     where = """purchase_date between @d1 and @d2
-      and (array_length(@s) = 0 or customer_state in unnest(@s))
-      and (array_length(@c) = 0 or category_name in unnest(@c))"""
+      and (coalesce(array_length(@s), 0) = 0 or customer_state in unnest(@s))
+      and (coalesce(array_length(@c), 0) = 0 or category_name in unnest(@c))"""
     P = (("d1", d1), ("d2", d2), ("s", tuple(sel_s)), ("c", tuple(sel_c)))
 
     with st.spinner("Querying BigQuery..."):
